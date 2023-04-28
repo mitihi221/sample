@@ -1,12 +1,18 @@
+# -*- coding: utf-8 -*-
+# https://projects.raspberrypi.org/en/projects/get-started-pico-w/
+
 import network
 import socket
 from time import sleep, sleep_ms
 import machine
-from machine import Pin, Timer, ADC
+from machine import Pin, Timer, ADC, WDT
 from picozero import pico_temp_sensor, pico_led
 import urequests
 import utime
+import gc
 
+# セキュリティ確保のため、SSID、パスワード、LINE Notify アクセストークンは、
+# 別ファイル (secrets.py) へ記載してください。
 import secrets
 ssid = secrets.ssid
 password = secrets.password
@@ -17,6 +23,9 @@ static_ip = '192.168.1.81'
 static_mask = '255.255.255.0'
 static_gateway = '0.0.0.0'
 static_dns = '0.0.0.0'
+
+
+wdt = WDT(timeout=5000)
 
 button1_pin = 19
 debounce = 0
@@ -49,6 +58,7 @@ def stop_alert(timer5):
 
 timer2 = Timer()
 def checkWifi(timer2):
+    gc.collect()
     if wlan.isconnected() == False:
         print('【エラー】Wi-Fi が切断されました。')
         WifiConnected = False
@@ -74,6 +84,7 @@ def connect():
         WLANstatus = wlan.status()
         sleep(2)
         retry -= 1
+        wdt.feed()
     if wlan.isconnected():
         ip = wlan.ifconfig()[0]
         print(f'\n接続しました。IP アドレスは {ip}')
@@ -185,34 +196,42 @@ timer3 = Timer()
 repeat_check = 0
 # https://docs.arduino.cc/built-in-examples/sensors/Knock
 def adc_read(timer3):
+    wdt.feed()
     val = adc.read_u16()
 #    print(val)
     if val > 768:
         global repeat_check
         if repeat_check+10000 < utime.ticks_ms():
-            timer3.deinit()
-            timer4.init(freq=4, mode=Timer.PERIODIC, callback=alert)
-            timer5.init(period=10000, mode=Timer.ONE_SHOT, callback=stop_alert)
+#            timer3.deinit()
+#            timer4.init(freq=4, mode=Timer.PERIODIC, callback=alert)
+#            timer5.init(period=10000, mode=Timer.ONE_SHOT, callback=stop_alert)
             alert_led.on()
             pushLINE('👈ぴんぽ～ん！')
+            alert_led.off()
             repeat_check = utime.ticks_ms()
-            timer3.init(freq=100, mode=Timer.PERIODIC, callback=adc_read)
+#            timer3.init(freq=100, mode=Timer.PERIODIC, callback=adc_read)
     
 
 # MAIN
-led.on()
-alert_led.on()
-sleep(1)
-led.off()
-alert_led.off()
-sleep(1)
-timer.init(freq=1.8, mode=Timer.PERIODIC, callback=blink)
-button1 = Pin(button1_pin, Pin.IN, Pin.PULL_UP)
-button1.irq(trigger=Pin.IRQ_RISING, handler=button1_onClick)
+try:
+    led.on()
+    alert_led.on()
+    sleep(1)
+    led.off()
+    alert_led.off()
+    sleep(1)
+    timer.init(freq=1.8, mode=Timer.PERIODIC, callback=blink)
+    button1 = Pin(button1_pin, Pin.IN, Pin.PULL_UP)
+    button1.irq(trigger=Pin.IRQ_RISING, handler=button1_onClick)
 
-ip = connect()
-sleep(1)
-connection = open_socket(ip)
-sleep(1)
-serve(connection)
+    ip = connect()
+    sleep(1)
+    connection = open_socket(ip)
+    sleep(1)
+    serve(connection)
+
+except KeyboardInterrupt:
+    #machine.reset()
+    pass
+
 
