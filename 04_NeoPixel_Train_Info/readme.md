@@ -1,5 +1,5 @@
 # サンプル04
-# NeoPixel と Raspberry Pi Pico W で Yahoo! 運行情報おしらせ灯をつくろう
+# NeoPixel と Raspberry Pi Pico W で Yahoo! 運行情報おしらせ灯をつくろう:train:
 
 ## できること
 指定した路線の運行状況を Yahoo! 運行情報から取得して、LED ライトで知らせる。 \
