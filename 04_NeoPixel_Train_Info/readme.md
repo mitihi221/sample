@@ -1,4 +1,4 @@
-サンプル04_NeoPixel で Yahoo! 運行情報おしらせ灯をつくろう
+サンプル04_NeoPixel と Raspberry Pi Pico W で Yahoo! 運行情報おしらせ灯をつくろう
 
 配線はサンプル03と同じです。
 
